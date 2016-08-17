@@ -343,3 +343,5 @@ Use `$q` for constructing promises from non-promise Objects/callbacks, and utili
 If you like this article, check out my advanced [Angular 1.5 master course](https://courses.toddmotto.com/products/ultimate-angularjs-master) which covers all the `$q`, `$httpProvider.interceptors`, `ui-router`, component architecture and the new `.component()` API.
 
 For anything else, [the $q documentation](https://docs.angularjs.org/api/ng/service/$q).
+
+(https://toddmotto.com/promises-angular-q)
