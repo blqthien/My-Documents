@@ -19,6 +19,7 @@ snippet examples for your day to day workflow. Contributions are welcome!
 - [Promises](#promises)
 - [Generators](#generators)
 - [Async Await](#async-await)
+- [Getter/Setter functions](#getter-and-setter-functions)
 
 ## var versus let / const
 
@@ -67,9 +68,9 @@ block-scoped identifiers before they are defined will produce
 a `ReferenceError`.
 
 ```javascript
-console.log(x);
+console.log(x); // ReferenceError: x is not defined
 
-let x = 'hi'; // ReferenceError: x is not defined
+let x = 'hi';
 ```
 
 > **Best Practice**: Leave `var` declarations inside of legacy code to denote
@@ -98,7 +99,7 @@ Using ES6 Blocks:
 ```javascript
 {
     let food = 'Meow Mix';
-}
+};
 
 console.log(food); // Reference Error
 ```
@@ -253,7 +254,7 @@ var text = "This string contains \"double quotes\" which are escaped.";
 ```
 
 ```javascript
-let text = `This string contains "double quotes" which are escaped.`;
+let text = `This string contains "double quotes" which don't need to be escaped anymore.`;
 ```
 
 **Template Literals** also support interpolation, which makes the task of
@@ -423,6 +424,10 @@ let api = {
 };
 
 export default api;
+
+/* Which is the same as
+ * export { api as default };
+ */
 ```
 
 > **Best Practices**: Always use the `export default` method at **the end** of
@@ -470,8 +475,28 @@ Lastly, we can import a list of values from a module:
 import * as additionUtil from 'math/addition';
 const { sumTwo, sumThree } = additionUtil;
 ```
+Importing from the default binding like this:
 
-When importing the default object we can choose which functions to import:
+```javascript
+import api from 'math/addition';
+// Same as: import { default as api } from 'math/addition';
+```
+
+While it is better to keep the exports simple, but we can sometimes mix default import and mixed import if needed.
+When we are exporting like this:
+
+```javascript
+// foos.js
+export { foo as default, foo1, foo2 };
+```
+
+We can import them like the following:
+
+```javascript
+import foo, { foo1, foo2 } from 'foos';
+```
+
+When importing a module exported using commonjs syntax (such as React) we can do:
 
 ```javascript
 import React from 'react';
@@ -700,7 +725,7 @@ React.Component.prototype[refreshComponent] = () => {
 ### Symbol.for(key)
 
 `Symbol.for(key)` will create a Symbol that is still immutable and unique, but can be looked up globally.
-Two identical calls to `Symbol.for(key)` will return the same Symbol instance. NOTE: This is not true for 
+Two identical calls to `Symbol.for(key)` will return the same Symbol instance. NOTE: This is not true for
 `Symbol(description)`:
 
 ```javascript
@@ -709,8 +734,8 @@ Symbol.for('foo') === Symbol('foo') // false
 Symbol.for('foo') === Symbol.for('foo') // true
 ```
 
-A common use case for Symbols, and in particular with `Symbol.for(key)` is for interoperability. This can be 
-achieved by having your code look for a Symbol member on object arguments from third parties that contain some 
+A common use case for Symbols, and in particular with `Symbol.for(key)` is for interoperability. This can be
+achieved by having your code look for a Symbol member on object arguments from third parties that contain some
 known interface. For example:
 
 ```javascript
@@ -738,8 +763,8 @@ class SomeReadableType {
 }
 ```
 
-> A notable example of Symbol use for interoperability is `Symbol.iterable` which exists on all iterable and iterator
-types in ES6: Arrays, strings, generators, etc. When called as a method it returns an object with an Iterator 
+> A notable example of Symbol use for interoperability is `Symbol.iterator` which exists on all iterable
+types in ES6: Arrays, strings, generators, etc. When called as a method it returns an object with an Iterator
 interface.
 
 <sup>[(back to table of contents)](#table-of-contents)</sup>
@@ -869,10 +894,10 @@ let value = map.get(el); // 'reference'
 el.parentNode.removeChild(el);
 el = null;
 
-value = map.get(el); // undefined
+// map is empty, since the element is destroyed
 ```
 
-As shown above, once the object is is destroyed by the garbage collector,
+As shown above, once the object is destroyed by the garbage collector,
 the WeakMap will automatically remove the key-value pair which was identified
 by that object.
 
@@ -935,44 +960,55 @@ been resolved/rejected is immutable - it will never change.
 Here is a practical example of using Promises:
 
 ```javascript
-var fetchJSON = function(url) {
-    return new Promise((resolve, reject) => {
-        $.getJSON(url)
-            .done((json) => resolve(json))
-            .fail((xhr, status, err) => reject(status + err.message));
-    });
-};
+var request = require('request');
+
+return new Promise((resolve, reject) => {
+  request.get(url, (error, response, body) => {
+    if (body) {
+        resolve(JSON.parse(body));
+      } else {
+        resolve({});
+      }
+  });
+});
 ```
 
 We can also **parallelize** Promises to handle an array of asynchronous
 operations by using `Promise.all()`:
 
 ```javascript
-var urls = [
-    'http://www.api.com/items/1234',
-    'http://www.api.com/items/4567'
+let urls = [
+  '/api/commits',
+  '/api/issues/opened',
+  '/api/issues/assigned',
+  '/api/issues/completed',
+  '/api/issues/comments',
+  '/api/pullrequests'
 ];
 
-var urlPromises = urls.map(fetchJSON);
+let promises = urls.map((url) => {
+  return new Promise((resolve, reject) => {
+    $.ajax({ url: url })
+      .done((data) => {
+        resolve(data);
+      });
+  });
+});
 
-Promise.all(urlPromises)
-    .then(function (results) {
-        results.forEach(function (data) {
-        });
-    })
-    .catch(function (err) {
-        console.log('Failed: ', err);
-    });
+Promise.all(promises)
+  .then((results) => {
+    // Do something with results of all our promises
+ });
 ```
 
 <sup>[(back to table of contents)](#table-of-contents)</sup>
 
 ## Generators
 
-Similar to how [Promises](https://github.com/DrkSephy/es6-cheatsheet#promises) allow us to avoid 
+Similar to how [Promises](https://github.com/DrkSephy/es6-cheatsheet#promises) allow us to avoid
 [callback hell](http://callbackhell.com/), Generators allow us to flatten our code - giving our
-asynchronous code a synchronous feel. Generators are essentially functions which we can 
-[pause their excution](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/yield)
+asynchronous code a synchronous feel. Generators are essentially functions which we can
+[pause their execution](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/yield)
 and subsequently return the value of an expression.
 
 A simple example of using generators is shown below:
@@ -986,11 +1022,10 @@ function* sillyGenerator() {
 }
 
 var generator = sillyGenerator();
-var value = generator.next();
-> console.log(value); // { value: 1, done: false }
-> console.log(value); // { value: 2, done: false }
-> console.log(value); // { value: 3, done: false }
-> console.log(value); // { value: 4, done: false }
+> console.log(generator.next()); // { value: 1, done: false }
+> console.log(generator.next()); // { value: 2, done: false }
+> console.log(generator.next()); // { value: 3, done: false }
+> console.log(generator.next()); // { value: 4, done: false }
 ```
 
 Where [next](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator/next)
@@ -1018,10 +1053,10 @@ function* getData() {
 }
 ```
 
-By the power of `yield`, we are gauranteed that `entry1` will have the data needed to be parsed and stored
-in `data1`. 
+By the power of `yield`, we are guaranteed that `entry1` will have the data needed to be parsed and stored
+in `data1`.
 
-While generators allow us to write asynchronous code in a synchronous manner, there is no clear 
+While generators allow us to write asynchronous code in a synchronous manner, there is no clear
 and easy path for error propagation. As such, as we can augment our generator with Promises:
 
 ```javascript
@@ -1038,17 +1073,16 @@ And we write a function which will step through our generator using `next` which
 ```javascript
 function iterateGenerator(gen) {
     var generator = gen();
-    var ret;
     (function iterate(val) {
-        ret = generator.next();
+        var ret = generator.next();
         if(!ret.done) {
             ret.value.then(iterate);
-        } 
-    })(); 
+        }
+    })();
 }
 ```
 
-By augmenting our Generator with Promises, we have a clear way of propogating errors through the use of our 
+By augmenting our Generator with Promises, we have a clear way of propagating errors through the use of our
 Promise `.catch` and `reject`. To use our newly augmented Generator, it is as simple as before:
 
 ```javascript
@@ -1061,7 +1095,7 @@ iterateGenerator(function* getData() {
 ```
 
 We were able to reuse our implementation to use our Generator as before, which shows their power. While Generators
-and Promises allow us to write asynchronous code in a synchronous manner while retaining the ability to propogate
+and Promises allow us to write asynchronous code in a synchronous manner while retaining the ability to propagate
 errors in a nice way, we can actually begin to utilize a simpler construction that provides the same benefits:
 [async-await](https://github.com/DrkSephy/es6-cheatsheet#async-await).
 
@@ -1069,12 +1103,12 @@ errors in a nice way, we can actually begin to utilize a simpler construction th
 
 ## Async Await
 
-While this is actually an upcoming ES2016 feature, `async await` allows us to perform the same thing we accomplished 
+While this is actually an upcoming ES2016 feature, `async await` allows us to perform the same thing we accomplished
 using Generators and Promises with less effort:
 
 ```javascript
 var request = require('request');
- 
+
 function getJSON(url) {
   return new Promise(function(resolve, reject) {
     request(url, function(error, response, body) {
@@ -1082,12 +1116,12 @@ function getJSON(url) {
     });
   });
 }
- 
+
 async function main() {
   var data = await getJSON();
   console.log(data); // NOT undefined!
 }
- 
+
 main();
 ```
 
@@ -1095,3 +1129,71 @@ Under the hood, it performs similarly to Generators. I highly recommend using th
 for getting up and running with ES7 and Babel can be found [here](http://masnun.com/2015/11/11/using-es7-asyncawait-today-with-babel.html).
 
 <sup>[(back to table of contents)](#table-of-contents)</sup>
+## Getter and setter functions
+
+ES6 has started supporting getter and setter functions. Using the following example:
+
+```javascript
+class Employee {
+
+    constructor(name) {
+        this._name = name;
+    }
+
+    get name() {
+      if(this._name) {
+        return 'Mr. ' + this._name.toUpperCase();  
+      } else {
+        return undefined;
+      }  
+    }
+
+    set name(newName) {
+      if (newName == this._name) {
+        console.log('I already have this name.');
+      } else if (newName) {
+        this._name = newName;
+      } else {
+        return false;
+      }
+    }
+}
+
+var emp = new Employee("James Bond");
+
+// uses the get method in the background
+if (emp.name) {
+  console.log(emp.name);  // Mr. JAMES BOND
+}
+
+// uses the setter in the background
+emp.name = "Bond 007";
+console.log(emp.name);  // Mr. BOND 007  
+```
+
+Latest browsers are also supporting getter/setter functions in Objects and we can use them for computed properties, adding listeners and preprocessing before setting/getting:
+
+```javascript
+var person = {
+  firstName: 'James',
+  lastName: 'Bond',
+  get fullName() {
+      console.log('Getting FullName');
+      return this.firstName + ' ' + this.lastName;
+  },
+  set fullName (name) {
+      console.log('Setting FullName');
+      var words = name.toString().split(' ');
+      this.firstName = words[0] || '';
+      this.lastName = words[1] || '';
+  }
+}
+
+person.fullName; // James Bond
+person.fullName = 'Bond 007';
+person.fullName; // Bond 007
+```
+<sup>[(back to table of contents)](#table-of-contents)</sup>
+
+
+https://github.com/DrkSephy/es6-cheatsheet
