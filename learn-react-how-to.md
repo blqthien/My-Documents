@@ -286,3 +286,5 @@ Còn rất nhiều bài viết hay khác về React, các bạn chỉ cần foll
 
 Chúc các bạn học react vui vẻ ^_^
 
+Reference : https://github.com/thanhtungdp/learn-react-how-to
+
